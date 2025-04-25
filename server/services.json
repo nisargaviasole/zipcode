@@ -1,0 +1,48 @@
+{
+  "mcpServers": {
+    "zipcode": {
+      "command": "uv",
+      "args": [
+        "run",
+        "--with",
+        "mcp[cli]",
+        "mcp",
+        "run",
+        "D:\\AI Project\\MCP\\zipcode\\server\\services\\zipcode.py"
+      ]
+    },
+    "doctor_list": {
+      "command": "uv",
+      "args": [
+        "run",
+        "--with",
+        "mcp[cli]",
+        "mcp",
+        "run",
+        "D:\\AI Project\\MCP\\zipcode\\server\\services\\doctorlist.py"
+      ]
+    },
+    "hospital_list": {
+      "command": "uv",
+      "args": [
+        "run",
+        "--with",
+        "mcp[cli]",
+        "mcp",
+        "run",
+        "D:\\AI Project\\MCP\\zipcode\\server\\services\\hospitallist.py"
+      ]
+    },
+    "medicine_list": {
+      "command": "uv",
+      "args": [
+        "run",
+        "--with",
+        "mcp[cli]",
+        "mcp",
+        "run",
+        "D:\\AI Project\\MCP\\zipcode\\server\\services\\medicinelist.py"
+      ]
+    }
+  }
+}
