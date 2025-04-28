@@ -48,7 +48,7 @@ def fetchCountyData(zipcode):
 
 @mcp.tool()
 async def get_county_info(zipcode):
-    """ Get zipcode alerts
+    """ If some one guve you zipcode then trigger this.
     
     Args:
         zipcode: 5 digit numbers (e.g. 33601)
