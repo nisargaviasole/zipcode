@@ -39,9 +39,9 @@ async def startup_event():
     global agent, client
 
     # Configuration
-    config = {"mcpServers": {"http": {"url": "https://mcpai.gleeze.com/chatsse/sse"}}}
+    config = {"mcpServers": {"http": {"url": "https://mcpai.gleeze.com/sse"}}}
     client = MCPClient.from_dict(config)
-
+    print("client",client)
     llm = ChatGroq(model="qwen-qwq-32b")
 
     system_prompt = (
@@ -101,4 +101,4 @@ async def chat(user_message: UserMessage):
         raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=9000)
