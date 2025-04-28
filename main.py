@@ -34,7 +34,7 @@ async def startup_event():
     global agent, client
 
     # Configuration
-    config = {"mcpServers": {"http": {"url": "https://mcpai.gleeze.com/sse"}}}
+    config = {"mcpServers": {"http": {"url": "https://mcpai.gleeze.com/chatsse/sse"}}}
     client = MCPClient.from_dict(config)
 
     llm = ChatGroq(model="qwen-qwq-32b")
