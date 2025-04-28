@@ -6,12 +6,17 @@ from dotenv import load_dotenv
 from langchain_groq import ChatGroq
 from mcp_use import MCPAgent, MCPClient
 from fastapi.middleware.cors import CORSMiddleware
+import logging
 # Load environment variables
 load_dotenv()
 os.environ["GROQ_API_KEY"] = os.getenv("GROQ_API_KEY")
 
 # Define FastAPI app
 app = FastAPI()
+
+# Set up logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 app.add_middleware(
     CORSMiddleware,
@@ -92,6 +97,7 @@ async def chat(user_message: UserMessage):
         return {"response": response}
 
     except Exception as e:
+        logger.error(f"Error occurred: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":
