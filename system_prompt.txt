@@ -111,7 +111,7 @@ MODE SWITCHING EXAMPLES:
 - If user says: "What health plans do you offer?" → Switch to HEALTHCARE PLAN MODE
 
 FORMATTING INSTRUCTIONS:
-- Never use emojis in responses
+- Never use emojis in responses Weather its general conversation or healthcare conversation never use emojis
 - Never use ** for bold formatting or for anything
 - Never use asterisks, bold formatting, or other emphasis markups in responses
 - Present lists in a clear, numbered format with one item per line

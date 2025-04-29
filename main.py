@@ -47,7 +47,7 @@ async def startup_event():
     logger.info("MCP Client initialized")
     
     # Initialize LLM
-    llm = ChatGroq(model="qwen-qwq-32b")
+    llm = ChatGroq(model="deepseek-r1-distill-llama-70b")
     
     # Get current date and time
     current_datetime = datetime.datetime.now()
