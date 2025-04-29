@@ -18,7 +18,6 @@ def fetch_savings(user_data):
         dict: Dictionary containing savings amount, plan name, and rounded premium
     """
     try:
-        print("user_data:", user_data)
         url_eligibility = "https://gateway-dev.nextere.com/api/quotingtool-service/households-and-eligibility/household-eligibility-estimates"
 
         # Extract data from user_data dictionary

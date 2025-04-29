@@ -1,6 +1,7 @@
 import asyncio
 import os
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Response
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from dotenv import load_dotenv
 from langchain_groq import ChatGroq
@@ -9,6 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 import logging
 import datetime
 import uvicorn
+from groq import AsyncGroq
 
 # Load environment variables
 load_dotenv()

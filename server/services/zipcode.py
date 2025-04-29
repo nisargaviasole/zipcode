@@ -40,8 +40,6 @@ def fetchCountyData(zipcode):
         res = conn.getresponse()
         fetch_data_of_county = res.read().decode("utf-8")
         fetch_county_data = json.loads(fetch_data_of_county)
-        print("fetch ",fetch_county_data)
-        print("condition",isinstance(fetch_county_data, list) and fetch_county_data)
         # Check if data is a list and has at least one item
         if isinstance(fetch_county_data, list) and fetch_county_data:
             return fetch_county_data[0]
@@ -67,7 +65,6 @@ async def get_county_info(zipcode):
         zipcode: 5 digit numbers (e.g. 33601)
     """
     validate_zip = check_zip_code_validity(zipcode)
-    print("validate",validate_zip)
     
     if validate_zip == None:
         return {"alert_status": "Invalid zipcode", "county_data": None}

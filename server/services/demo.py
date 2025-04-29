@@ -1,7 +1,12 @@
+# user_data: {'full_name': 'nisarg jadhav', 'age': 24, 'gender': 'male', 'zip_code': '33601', 'email': 'abc@gmail.com', 'phone_number': '7984561230', 'tobacco_use': False, 'pregnancy_status': 'Not applicable', 'employer_coverage': False, 'household_size': 4, 'annual_income': 500000, 'preferred_doctors': ['MARGARET C. TEST CRNA'], 'preferred_hospitals': [], 'preferred_medications': []}
+# eligibility_payload: {'household': {'income': 500000, 'people': [{'age': 24, 'gender': 'male', 'isPregnant': False, 'usesTobacco': False, 'relationship': 'Self', 'hasMec': True}]}, 'market': 'Individual', 'place': {'countyFips': '12057', 'state': 'FL', 'zipcode': '33601'}, 'year': 2024}
+
+
 from mcp.server.fastmcp import FastMCP
 import json
 import requests
 from zipcode import fetchCountyData
+
 
 def fetch_savings(user_data):
     """
@@ -26,7 +31,7 @@ def fetch_savings(user_data):
         zip_code_data = user_data.get("zip_code")
         zip_data = fetchCountyData(zip_code_data)
         county_fips = zip_data["fips"]
-        state = zip_data["state"]
+        state = 'zip_data["state"]'
 
         # Build payload for eligibility estimate
         eligibility_payload = {
@@ -96,12 +101,13 @@ def fetch_savings(user_data):
             },
         }
 
+        print("plan",plan_payload)
         plan_response = requests.post(
             url=url_plan,
             data=json.dumps(plan_payload),
             headers={"Content-Type": "application/json"},
         )
-
+        print("stats",plan_response.status_code)
         if plan_response.status_code == 200:
             plan_data = plan_response.json()
             plans = plan_data.get("plans", [])
@@ -113,25 +119,30 @@ def fetch_savings(user_data):
                 return {
                     "savings": aptc,
                     "plan_name": plan_name,
-                    "rounded_plan": rounded_plan
+                    "rounded_plan": rounded_plan,
                 }
 
     except Exception as e:
         print(f"Error calculating savings: {e}")
 
-    return {
-        "savings": 0,
-        "plan_name": "",
-        "rounded_plan": 0
-    }
+    return {"savings": 0, "plan_name": "", "rounded_plan": 0}
+
+
 sample_user_data = {
-    "annual_income": 50000,
-    "age": 25,
-    "gender": "Male",
-    "pregnancy_status": False,
+    "full_name": "nisarg jadhav",
+    "age": 24,
+    "gender": "male",
+    "zip_code": "33601",
+    "email": "abc@gmail.com",
+    "phone_number": "7984561230",
     "tobacco_use": False,
+    "pregnancy_status": "Not applicable",
     "employer_coverage": False,
-    "zip_code": "33601"  # Tampa, FL ZIP code
+    "household_size": 4,
+    "annual_income": 500000,
+    "preferred_doctors": ["MARGARET C. TEST CRNA"],
+    "preferred_hospitals": [],
+    "preferred_medications": [],
 }
 
 print(fetch_savings(sample_user_data))
