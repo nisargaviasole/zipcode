@@ -7,6 +7,9 @@ from langchain_groq import ChatGroq
 from mcp_use import MCPAgent, MCPClient
 from fastapi.middleware.cors import CORSMiddleware
 import logging
+import datetime
+import uvicorn
+
 # Load environment variables
 load_dotenv()
 os.environ["GROQ_API_KEY"] = os.getenv("GROQ_API_KEY")
@@ -20,7 +23,7 @@ logger = logging.getLogger(__name__)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # <-- for development, allow all. In production, specify the exact URL
+    allow_origins=["*"],  # For development, allow all. In production, specify the exact URL
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -41,37 +44,52 @@ async def startup_event():
     # Configuration
     config = {"mcpServers": {"http": {"url": "https://mcpai.gleeze.com/sse"}}}
     client = MCPClient.from_dict(config)
-    print("client",client)
+    logger.info("MCP Client initialized")
+    
+    # Initialize LLM
     llm = ChatGroq(model="qwen-qwq-32b")
-
-    system_prompt = (
-        "If user ask normal questions genral question then answer them regarding that question."
-        "You are not only healthcare agent u can give general information to user."
-        "You are a warm, professional, and helpful call center agent working for a healthcare provider. "
-        "When a user asks about getting a health insurance or healthcare plan, you politely guide them through the process of collecting all the necessary information, step by step. "
-        "You must collect the following details before suggesting a plan: full name, age, gender, zip code, tobacco use (yes or no), pregnancy status (if applicable), household size, income, and whether they have any dependents. "
-        "Ask one question at a time and wait for the user's response before proceeding. "
-        "Use polite phrases like 'May I ask', 'Can you please share', or 'Just to confirm' to keep the tone customer-friendly. "
-        "Confirm each detail as the user provides it, and thank them for their response. "
-        "Always maintain a helpful, empathetic, and conversational tone, just like a real call center representative."
-        "After getting all details create json of that details and show to the user."
-        "also save the user and ai conversation in one text or json file like whole conversation In local."
-        "After get all the values continue the communication Like after all data get tell them we are calculate and get back to you and then continue the communication with the user."
-    )
-
-    # Create MCPAgent
-    agent = MCPAgent(
-        llm=llm,
-        client=client,
-        max_steps=1500,
-        memory_enabled=True,
-        system_prompt=system_prompt,
-    )
+    
+    # Get current date and time
+    current_datetime = datetime.datetime.now()
+    current_date = current_datetime.strftime("%B %d, %Y")
+    
+    try:
+        # Read system prompt from file
+        with open("system_prompt.txt", "r") as file:
+            system_prompt = file.read()
+        
+        # Update system prompt with date/time
+        system_prompt_formatted = system_prompt.format(
+            current_date=current_date
+        )
+        
+        # Create MCPAgent
+        agent = MCPAgent(
+            llm=llm,
+            client=client,
+            memory_enabled=True,
+            system_prompt=system_prompt_formatted,
+        )
+        logger.info("MCP Agent initialized with system prompt")
+    except Exception as e:
+        logger.error(f"Error initializing agent: {str(e)}")
+        # Fallback to a minimal system prompt if file loading fails
+        minimal_prompt = "You are a helpful assistant for a healthcare provider. Current date: {current_date}".format(
+            current_date=current_date
+        )
+        agent = MCPAgent(
+            llm=llm,
+            client=client,
+            memory_enabled=True,
+            system_prompt=minimal_prompt,
+        )
+        logger.info("MCP Agent initialized with minimal prompt due to error")
 
 @app.on_event("shutdown")
 async def shutdown_event():
     if client and client.sessions:
         await client.close_all_sessions()
+        logger.info("All MCP client sessions closed")
 
 @app.post("/chat")
 async def chat(user_message: UserMessage):
@@ -84,16 +102,17 @@ async def chat(user_message: UserMessage):
             agent.clear_conversation_history()
             return {"response": "Conversation history cleared."}
 
+        logger.info(f"Processing user message: {user_input[:50]}...")
         response = await agent.run(user_input)
 
-        while isinstance(response, dict) and "needs_input" in response:
-            needed = response["needs_input"]
-            message = response["message"]
+        # Handle if the agent needs additional input from the user
+        if isinstance(response, dict) and "needs_input" in response:
             return {
-                "needs_input": needed,
-                "message": message
+                "needs_input": response["needs_input"],
+                "message": response["message"]
             }
 
+        logger.info("Response generated successfully")
         return {"response": response}
 
     except Exception as e:

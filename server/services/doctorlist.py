@@ -41,12 +41,21 @@ def fetch_doctor(query, zipcode):
 
 @mcp.tool()
 async def get_doctor_list_by_zipcode(doctor_name: str, zipcode: str) -> dict:
-    """Get doctor list for a validated zipcode.
-
+    """Find doctors in your area by name and location.
+    
+    Trigger this tool whenever:
+    - Someone mentions a doctor name or medical specialty they're looking for
+    - Someone asks to find doctors in an area
+    - Someone needs physician information
+    
+    This will search for doctors matching the name or specialty provided.
+    If a zipcode isn't provided, the tool will prompt for one.
+    
     Args:
-        doctor_name: Name of the doctor
-        zipcode: 5 digit number (e.g., 33601)
+        doctor_name: Name of doctor or specialty (e.g., "Dr. Smith", "Cardiologist")
+        zipcode: 5 digit number (e.g., 33601) for location search
     """
+    
     if not check_zip_code_validity(zipcode):
         return {
             "needs_input": "zipcode",
@@ -54,6 +63,7 @@ async def get_doctor_list_by_zipcode(doctor_name: str, zipcode: str) -> dict:
         }
     
     doctor_list = fetch_doctor(doctor_name, zipcode)
+    print("doctor list",doctor_list)
     if not doctor_list:
         return {"error": "No doctors found or error fetching data."}
     

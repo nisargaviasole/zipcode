@@ -42,11 +42,20 @@ def fetch_hospital(zipcode, query):
 
 @mcp.tool()
 async def get_hospital_list_by_zipcode(hospital_name: str, zipcode: str) -> dict:
-    """Get hospital list for a validated zipcode.
-
+    """
+    Find hospitals in your area by name and location.
+    
+    Trigger this tool whenever:
+    - Someone mentions a hospital name they're looking for
+    - Someone asks about hospitals or medical centers in an area
+    - Someone needs information about healthcare facilities
+    
+    This will search for hospitals matching the name provided.
+    If a zipcode isn't provided, the tool will prompt for one.
+    
     Args:
-        hospital_name: Name of the hospital
-        zipcode: 5 digit number (e.g., 33601)
+        hospital_name: Name of hospital or facility (e.g., "Memorial", "General Hospital")
+        zipcode: 5 digit number (e.g., 33601) for location search
     """
     if not check_zip_code_validity(zipcode):
         return {

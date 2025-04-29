@@ -34,10 +34,19 @@ def fetch_medicine(query):
 
 @mcp.tool()
 async def get_medicine_list(medicine_name: str) -> dict:
-    """Get Medicine List and details.
-
+    """
+    Find detailed information about medications and drugs.
+    
+    Trigger this tool whenever:
+    - Someone mentions a medicine or drug name
+    - Someone asks about medication information
+    - Someone needs details about a prescription drug
+    - Someone inquires about drug dosages, strengths, or forms
+    
+    This will search for medications matching the name provided and return detailed information.
+    
     Args:
-        medicine_name: Name of the medicine
+        medicine_name: Name of medicine or drug (e.g., "Lipitor", "Amoxicillin")
     """
     medicine_list = fetch_medicine(medicine_name)
     if not medicine_list:
