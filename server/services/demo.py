@@ -1,11 +1,7 @@
 from mcp.server.fastmcp import FastMCP
-import logging
 import json
-mcp = FastMCP("savings")
 import requests
 from zipcode import fetchCountyData
-
-logger = logging.getLogger(__name__)
 
 def fetch_savings(user_data):
     """
@@ -18,7 +14,6 @@ def fetch_savings(user_data):
         dict: Dictionary containing savings amount, plan name, and rounded premium
     """
     try:
-        print("user_data:", user_data)
         url_eligibility = "https://gateway-dev.nextere.com/api/quotingtool-service/households-and-eligibility/household-eligibility-estimates"
 
         # Extract data from user_data dictionary
@@ -30,8 +25,8 @@ def fetch_savings(user_data):
         valueOfCoverage = not user_data.get("employer_coverage", False)
         zip_code_data = user_data.get("zip_code")
         zip_data = fetchCountyData(zip_code_data)
-        county_fips = zip_data.get("fips")
-        state = zip_data.get("state")
+        county_fips = zip_data["fips"]
+        state = zip_data["state"]
 
         # Build payload for eligibility estimate
         eligibility_payload = {
@@ -122,55 +117,21 @@ def fetch_savings(user_data):
                 }
 
     except Exception as e:
-        logger.error(f"Error calculating savings: {e}")
+        print(f"Error calculating savings: {e}")
 
     return {
         "savings": 0,
         "plan_name": "",
         "rounded_plan": 0
     }
+sample_user_data = {
+    "annual_income": 50000,
+    "age": 25,
+    "gender": "Male",
+    "pregnancy_status": False,
+    "tobacco_use": False,
+    "employer_coverage": False,
+    "zip_code": "33601"  # Tampa, FL ZIP code
+}
 
-
-@mcp.tool()
-async def get_saving_info(json_data):
-    """
-    Calculate savings and recommend a healthcare plan based on user information.
-    
-    Args:
-        json_data (dict): JSON object containing user's complete profile including:
-          - Full name
-          - Age
-          - Gender
-          - Zip code
-          - Email
-          - Phone number
-          - Tobacco use status
-          - Pregnancy status (if applicable)
-          - Employer coverage status
-          - Household size
-          - Annual income
-          - Preferred doctors
-          - Preferred hospitals
-          - Preferred medications
-    
-    Returns:
-        dict: Dictionary containing:
-          - savings (str): Estimated savings amount
-          - healthplan (str): Recommended healthcare plan name
-          - roundedplan : With Discount plan price
-    """
-    try:
-        # Log the incoming data (remove in production or sanitize sensitive data)
-        print("Received user data for savings calculation")
-        
-        # Process the user data to get savings information
-        result = fetch_savings(json_data)
-        
-        return result
-    except Exception as e:
-        logger.error(f"Error in get_saving_info: {e}")
-        return {
-            "savings": "0", 
-            "healthplan": "Error processing request",
-            "roundedplan": "Error Processing request"
-        }
+print(fetch_savings(sample_user_data))
