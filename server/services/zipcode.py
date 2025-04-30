@@ -64,6 +64,7 @@ async def get_county_info(zipcode):
     Args:
         zipcode: 5 digit numbers (e.g. 33601)
     """
+    print("Zipcode Tool called")
     validate_zip = check_zip_code_validity(zipcode)
     
     if validate_zip == None:

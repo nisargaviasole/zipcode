@@ -1,148 +1,104 @@
-# user_data: {'full_name': 'nisarg jadhav', 'age': 24, 'gender': 'male', 'zip_code': '33601', 'email': 'abc@gmail.com', 'phone_number': '7984561230', 'tobacco_use': False, 'pregnancy_status': 'Not applicable', 'employer_coverage': False, 'household_size': 4, 'annual_income': 500000, 'preferred_doctors': ['MARGARET C. TEST CRNA'], 'preferred_hospitals': [], 'preferred_medications': []}
-# eligibility_payload: {'household': {'income': 500000, 'people': [{'age': 24, 'gender': 'male', 'isPregnant': False, 'usesTobacco': False, 'relationship': 'Self', 'hasMec': True}]}, 'market': 'Individual', 'place': {'countyFips': '12057', 'state': 'FL', 'zipcode': '33601'}, 'year': 2024}
+import asyncio
+import os
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
+from dotenv import load_dotenv
+from langchain_groq import ChatGroq
+from mcp_use import MCPAgent, MCPClient
+from fastapi.middleware.cors import CORSMiddleware
+import logging
+import uvicorn
+# Load environment variables
+load_dotenv()
+os.environ["GROQ_API_KEY"] = os.getenv("GROQ_API_KEY")
 
+# Define FastAPI app
+app = FastAPI()
 
-from mcp.server.fastmcp import FastMCP
-import json
-import requests
-from zipcode import fetchCountyData
+# Set up logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # <-- for development, allow all. In production, specify the exact URL
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-def fetch_savings(user_data):
-    """
-    Process user data and return savings and health plan information.
+# Initialize variables
+config = {"mcpServers": {"http": {"url": "http://127.0.0.1:8000/sse"}}}
+client = MCPClient.from_dict(config)
 
-    Args:
-        user_data (dict): User's healthcare information including demographics and preferences
+llm = ChatGroq(model="deepseek-r1-distill-llama-70b")
 
-    Returns:
-        dict: Dictionary containing savings amount, plan name, and rounded premium
-    """
+system_prompt = (
+    "If user ask normal questions genral question then answer them regarding that question."
+    "You are not only healthcare agent u can give general information to user."
+    "You are a warm, professional, and helpful call center agent working for a healthcare provider. "
+    "When a user asks about getting a health insurance or healthcare plan, you politely guide them through the process of collecting all the necessary information, step by step. "
+    "You must collect the following details before suggesting a plan: full name, age, gender, zip code, tobacco use (yes or no), pregnancy status (if applicable), household size, income,doctor,hospital,medication and whether they have any dependents."
+    "ASk Doctor, Hospital and Medicine question seprately"
+    "Dont add any previous response for example after giving age dont say user that your age is this and all."
+    "Ask one question at a time and wait for the user's response before proceeding. "
+    "Use polite phrases like 'May I ask', 'Can you please share', or 'Just to confirm' to keep the tone customer-friendly. "
+    "Confirm each detail as the user provides it, and thank them for their response. "
+    "Always maintain a helpful, empathetic, and conversational tone, just like a real call center representative."
+    "After get all the values create json and send to my get_saving_info tool.Its giving a savings , healthcare plan name and premium of the plan so say that all to the user"
+    "Dont add any emojis ** and dont bold and word or sentense"
+    "If user wants to change previous data like after giving age user wants to change age then change that field and send update json and again continue the conversation"
+)
+
+agent = MCPAgent(
+    llm=llm,
+    client=client,
+    max_steps=1500,
+    memory_enabled=True,
+    system_prompt=system_prompt,
+)
+# Define a request model
+class UserMessage(BaseModel):
+    message: str
+
+@app.on_event("startup")
+async def startup_event():
+    global agent, client
+
+    # Configuration
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    if client and client.sessions:
+        await client.close_all_sessions()
+
+@app.post("/chat")
+async def chat(user_message: UserMessage):
+    global agent
+
     try:
-        url_eligibility = "https://gateway-dev.nextere.com/api/quotingtool-service/households-and-eligibility/household-eligibility-estimates"
+        user_input = user_message.message.strip()
 
-        # Extract data from user_data dictionary
-        income = user_data.get("annual_income")
-        age = user_data.get("age")
-        gender = user_data.get("gender")
-        valueOfPrehganant = user_data.get("pregnancy_status") == "Yes"
-        valueOfTobbaco = user_data.get("tobacco_use", False)
-        valueOfCoverage = not user_data.get("employer_coverage", False)
-        zip_code_data = user_data.get("zip_code")
-        zip_data = fetchCountyData(zip_code_data)
-        county_fips = zip_data["fips"]
-        state = 'zip_data["state"]'
+        if user_input.lower() in ["clear"]:
+            agent.clear_conversation_history()
+            return {"response": "Conversation history cleared."}
 
-        # Build payload for eligibility estimate
-        eligibility_payload = {
-            "household": {
-                "income": income,
-                "people": [
-                    {
-                        "age": age,
-                        "gender": gender,
-                        "isPregnant": valueOfPrehganant,
-                        "usesTobacco": valueOfTobbaco,
-                        "relationship": "Self",
-                        "hasMec": valueOfCoverage,
-                    }
-                ],
-            },
-            "market": "Individual",
-            "place": {
-                "countyFips": county_fips,
-                "state": state,
-                "zipcode": zip_code_data,
-            },
-            "year": 2024,
-        }
+        response = await agent.run(user_input)
 
-        print("eligibility_payload:", eligibility_payload)
+        while isinstance(response, dict) and "needs_input" in response:
+            needed = response["needs_input"]
+            message = response["message"]
+            return {
+                "needs_input": needed,
+                "message": message
+            }
 
-        response = requests.post(
-            url=url_eligibility,
-            data=json.dumps(eligibility_payload),
-            headers={"Content-Type": "application/json"},
-        )
-
-        aptc = 0
-        aptcEligible = False
-        if response.status_code == 200:
-            data = response.json()
-            estimates = data.get("estimates", [])
-            if estimates:
-                aptc = estimates[0].get("aptc", 0)
-                aptcEligible = aptc > 0
-
-        # Now fetch lowest cost bronze plan
-        url_plan = "https://gateway-dev.nextere.com/api/quotingtool-service/households-and-eligibility/lowest-cost-bronze-plan-aI"
-
-        plan_payload = {
-            "household": {
-                "income": income,
-                "people": [
-                    {
-                        "aptcEligible": aptcEligible,
-                        "age": age,
-                        "hasMec": valueOfCoverage,
-                        "isPregnant": valueOfPrehganant,
-                        "usesTobacco": valueOfTobbaco,
-                        "gender": gender,
-                        "relationship": "Self",
-                        "utilizationLevel": "Low",
-                    }
-                ],
-                "hasMarriedCouple": False,
-            },
-            "place": {
-                "countyFips": county_fips,
-                "state": state,
-                "zipcode": zip_code_data,
-            },
-        }
-
-        print("plan",plan_payload)
-        plan_response = requests.post(
-            url=url_plan,
-            data=json.dumps(plan_payload),
-            headers={"Content-Type": "application/json"},
-        )
-        print("stats",plan_response.status_code)
-        if plan_response.status_code == 200:
-            plan_data = plan_response.json()
-            plans = plan_data.get("plans", [])
-            if plans:
-                plan_name = plans[0].get("name", "")
-                plan_with_discount = plans[0].get("premium_W_Credit", 0)
-                rounded_plan = round(plan_with_discount)
-
-                return {
-                    "savings": aptc,
-                    "plan_name": plan_name,
-                    "rounded_plan": rounded_plan,
-                }
+        return {"response": response}
 
     except Exception as e:
-        print(f"Error calculating savings: {e}")
+        logger.error(f"Error occurred: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
 
-    return {"savings": 0, "plan_name": "", "rounded_plan": 0}
+if __name__ == "__main__":
+    uvicorn.run(app, host="0.0.0.0", port=9000)
 
-
-sample_user_data = {
-    "full_name": "nisarg jadhav",
-    "age": 24,
-    "gender": "male",
-    "zip_code": "33601",
-    "email": "abc@gmail.com",
-    "phone_number": "7984561230",
-    "tobacco_use": False,
-    "pregnancy_status": "Not applicable",
-    "employer_coverage": False,
-    "household_size": 4,
-    "annual_income": 500000,
-    "preferred_doctors": ["MARGARET C. TEST CRNA"],
-    "preferred_hospitals": [],
-    "preferred_medications": [],
-}
-
-print(fetch_savings(sample_user_data))

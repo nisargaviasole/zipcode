@@ -160,7 +160,7 @@ async def get_saving_info(json_data):
     """
     try:
         # Log the incoming data (remove in production or sanitize sensitive data)
-        print("Received user data for savings calculation")
+        print("Saving Tool called")
         
         # Process the user data to get savings information
         result = fetch_savings(json_data)
