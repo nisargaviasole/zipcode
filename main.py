@@ -22,10 +22,9 @@ os.environ["GROQ_API_KEY"] = os.getenv("GROQ_API_KEY")
 # Define FastAPI app
 app = FastAPI()
 
-# Add SessionMiddleware to manage sessions
 app.add_middleware(
     SessionMiddleware,
-    secret_key=os.getenv("SESSION_SECRET_KEY", str(uuid.uuid4())),
+    secret_key=str(uuid.uuid4()),
     session_cookie="session_id",
     max_age=3600,  # Session expires after 1 hour
 )
