@@ -66,50 +66,12 @@ system_prompt_formatted = system_prompt.format(
     current_date=current_date
 )
 
-# Create agent with multiple MCP servers
-agent = MCPAgent(
-    llm=llm,
-    client=client,
-    # memory_enabled=True,
-    system_prompt=system_prompt_formatted,
-)
 
 # Define request models
 class UserMessage(BaseModel):
     message: str
     session_id: str  # Unique per browser
     server_preference: str = "primary"  # Optional parameter to choose server
-
-# # Route to handle chat requests
-# @app.post("/chat")
-# async def chat(
-#     user_message: UserMessage,
-#     request: Request,
-# ):
-#     try:
-#         user_input = user_message.message.strip()
-        
-#         # Check for command to clear conversation history
-#         if user_input.lower() in ["clear"]:
-#             agent.clear_conversation_history()
-#             return {"response": "Conversation history cleared."}
-
-#         logger.info(f"Processing user message: {user_input[:50]}...")
-#         response = await agent.run(user_input)
-
-#         # Handle if the agent needs additional input from the user
-#         if isinstance(response, dict) and "needs_input" in response:
-#             return {
-#                 "needs_input": response["needs_input"],
-#                 "message": response["message"],
-#             }
-
-#         logger.info("Response generated successfully")
-#         return {"response": response}
-
-#     except Exception as e:
-#         logger.error(f"Error occurred: {str(e)}")
-#         raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.post("/chat")
