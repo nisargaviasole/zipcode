@@ -9,9 +9,11 @@ dependencies = [
     "dotenv>=0.9.9",
     "fastapi>=0.115.12",
     "httpx>=0.28.1",
+    "itsdangerous>=2.2.0",
     "langchain-groq>=0.3.2",
     "mcp-use>=1.2.7",
     "mcp[cli]>=1.6.0",
     "nest-asyncio>=1.6.0",
+    "python-multipart>=0.0.20",
     "sseclient>=0.0.27",
 ]
