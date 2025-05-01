@@ -36,18 +36,16 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Configure multiple MCP servers
-# config = {
-#     "mcpServers": {
-#         "primary": {
-#             "url": "https://mcpai.gleeze.com/sse"
-#         },
-#         "secondary": {
-#             "url": "https://mcptool.gleeze.com/sse"
-#         }
-#     }
-# }
-
-config = {"mcpServers": {"https": {"url": "https://mcptool.gleeze.com/sse"}}}
+config = {
+    "mcpServers": {
+        "primary": {
+            "url": "https://mcpai.gleeze.com/sse"
+        },
+        "secondary": {
+            "url": "https://mcptool.gleeze.com/sse"
+        }
+    }
+}
 
 # Create MCP client with multiple servers
 client = MCPClient.from_dict(config)
