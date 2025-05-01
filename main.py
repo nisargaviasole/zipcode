@@ -25,9 +25,9 @@ app = FastAPI()
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://mcpchat.gleeze.com"],  # Restrict to frontend origin
+    allow_origins=["*"],  # Restrict to frontend origin
     allow_credentials=True,
-    allow_methods=["GET", "POST", "OPTIONS"],  # Explicitly list allowed methods
+    allow_methods=["*"],  # Explicitly list allowed methods
     allow_headers=["*"],  # Allow all headers
 )
 
