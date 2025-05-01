@@ -47,7 +47,7 @@ logger = logging.getLogger(__name__)
 #     }
 # }
 
-config = {"mcpServers": {"http": {"url": "https://mcpai.gleeze.com/sse"}}}
+config = {"mcpServers": {"https": {"url": "https://mcptool.gleeze.com/sse"}}}
 
 # Create MCP client with multiple servers
 client = MCPClient.from_dict(config)
