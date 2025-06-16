@@ -14,6 +14,7 @@ def fetch_savings(user_data):
         income = user_data.get("annual_income")
         age = user_data.get("age")
         gender = user_data.get("gender")
+        gender = gender.capitalize() if gender else None
         valueOfPrehganant = user_data.get("pregnancy_status") == "Yes"
         valueOfTobbaco = str(user_data.get("tobacco_use", "")).strip().lower() == "yes"
         valueOfCoverage = not user_data.get("employer_coverage", False)

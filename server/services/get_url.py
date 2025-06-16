@@ -10,114 +10,96 @@ mcp = FastMCP("get_url")
 
 def build_plan_listing_url(user_data):
     """
-    Build the plan listing URL with user data parameters
-    
+    Build the plan listing URL with user data parameters, using defaults for missing values.
+
     Args:
         user_data (dict): User's healthcare information
-        
+
     Returns:
         str: Complete URL with encoded form data
     """
     try:
-        # Extract basic user information
-        age = user_data.get("age", 22)
-        gender = user_data.get("gender", "Male")
-        tobacco_use = str(user_data.get("tobacco_use", "")).strip().lower() == "yes"
-        pregnancy_status = user_data.get("pregnancy_status", "No") == "Yes"
-        employer_coverage = user_data.get("employer_coverage", False)
-        household_size = user_data.get("household_size", 1)
-        annual_income = user_data.get("annual_income", 0)
-        zip_code = user_data.get("zip_code", "")
-        
-        # Get zip code data for pincode section
-        zip_data = fetchCountyData(zip_code) if zip_code else {}
-        county_name = zip_data.get("county", "")
-        county_fips = zip_data.get("fips", "")
-        state = zip_data.get("state", "")
-        state_name = zip_data.get("state_name", "")
-        
-        # Process providers (doctors) - convert from user preferences to provider format
-        providers = []
-        preferred_doctors = user_data.get("preferred_doctors", [])
-        
-        for doctor in preferred_doctors:
-            if isinstance(doctor, dict):
-                provider_entry = {
-                    "address": {
-                        "city": doctor.get("city", "").upper(),
-                        "phone": doctor.get("phone", ""),
-                        "state": doctor.get("state", "").upper(),
-                        "street1": doctor.get("address", "").upper(),
-                        "street2": doctor.get("suite", ""),
-                        "zipcode": doctor.get("zipcode", zip_code)
-                    },
-                    "distance": doctor.get("distance", 0.0),
-                    "provider": {
-                        "accepting": doctor.get("accepting", "accepting"),
-                        "facility_Types": [],
-                        "gender": doctor.get("gender", "unknown"),
-                        "group_Id": doctor.get("group_id", ""),
-                        "languages": doctor.get("languages", ["English"]),
-                        "name": doctor.get("name", "").upper(),
-                        "npi": doctor.get("npi", ""),
-                        "provider_Type": doctor.get("provider_type", "Individual"),
-                        "specialties": doctor.get("specialties", []),
-                        "taxonomy": doctor.get("taxonomy", ""),
-                        "valid": doctor.get("valid", False)
-                    }
-                }
-                providers.append(provider_entry)
-        
-        # Process medications/drugs
-        drugs = []
-        preferred_medications = user_data.get("preferred_medications", [])
-        
-        for medication in preferred_medications:
-            if isinstance(medication, dict):
-                drug_entry = {
-                    "full_Name": medication.get("full_name", ""),
-                    "name": medication.get("name", "").upper(),
-                    "route": medication.get("route", "Oral Pill"),
-                    "rxcui": medication.get("rxcui", ""),
-                    "rxnorm_dose_form": medication.get("dose_form", "Oral Tablet"),
-                    "rxterms_dose_form": medication.get("dose_form_short", "Tab"),
-                    "strength": medication.get("strength", "")
-                }
-                drugs.append(drug_entry)
-        
-        # Build the form data structure
-        form_data = {
-            "selfAge": age,
-            "selfGender": gender,
-            "selfTobaccoUser": tobacco_use,
-            "selfPregnant": pregnancy_status,
-            "selfCoverage": employer_coverage,
-            "dependents": [],  # Empty for now, can be extended for family members
-            "utilizationLevel": "Low",  # Default value
-            "householdSize": household_size,
-            "income": annual_income,
-            "providers": providers,
-            "drugs": drugs,
+        # Define default parameters
+        default_params = {
+            "selfAge": 23,
+            "selfGender": "Male",
+            "selfTobaccoUser": False,
+            "selfPregnant": False,
+            "selfCoverage": False,
+            "dependents": [],
+            "utilizationLevel": "Low",
+            "householdSize": 1,
+            "income": 40000,
+            "providers": [],
+            "drugs": [],
             "pincode": {
-                "zipcode": zip_code,
-                "name": county_name,
-                "fips": county_fips,
-                "state": state,
-                "stateName": state_name
+                "zipcode": "33601",
+                "name": "Hillsborough County",
+                "fips": "12057",
+                "state": "FL",
+                "stateName": "Florida",
             },
-            "countOfMember": household_size
+            "countOfMember": 1,
         }
-        
+
+        # Initialize updated parameters with defaults
+        updated_params = default_params.copy()
+
+        # Update parameters with user data if provided
+        updated_params["selfAge"] = user_data.get("age", updated_params["selfAge"])
+        updated_params["selfGender"] = user_data.get(
+            "gender", updated_params["selfGender"]
+        ).capitalize()
+        updated_params["selfTobaccoUser"] = user_data.get(
+            "tobacco", updated_params["selfTobaccoUser"]
+        )
+        updated_params["selfPregnant"] = user_data.get(
+            "pregnant", updated_params["selfPregnant"]
+        )
+        updated_params["selfCoverage"] = user_data.get(
+            "coverage", updated_params["selfCoverage"]
+        )
+        updated_params["householdSize"] = user_data.get(
+            "household", updated_params["householdSize"]
+        )
+        updated_params["countOfMember"] = user_data.get(
+            "household", updated_params["countOfMember"]
+        )
+        updated_params["income"] = user_data.get("income", updated_params["income"])
+
+        # Handle APTC if provided (not in default_params, so only add if present)
+        if "aptc" in user_data:
+            updated_params["aptc"] = user_data["aptc"]
+
+        # Update pincode information
+        updated_params["pincode"] = {
+            "zipcode": user_data.get("zipcode", updated_params["pincode"]["zipcode"]),
+            "name": user_data.get("county", updated_params["pincode"]["name"]),
+            "fips": user_data.get("county_fips", updated_params["pincode"]["fips"]),
+            "state": user_data.get("state", updated_params["pincode"]["state"]),
+            "stateName": user_data.get(
+                "full_state", updated_params["pincode"]["stateName"]
+            ),
+        }
+
+        # Handle drugs
+        updated_params["drugs"] = user_data.get("drugs", updated_params["drugs"]) or []
+
+        # Handle providers (doctors and hospitals)
+        doctors = user_data.get("doctor_provider", []) or []
+        hospitals = user_data.get("hospital_facility", []) or []
+        updated_params["providers"] = doctors + hospitals
+
         # Convert to JSON string and URL encode
-        form_json = json.dumps(form_data, separators=(',', ':'))
+        form_json = json.dumps(updated_params, separators=(",", ":"))
         encoded_form = urllib.parse.quote(form_json)
-        
+
         # Build the complete URL
         base_url = "https://nexquoting.com/nextere/plan/plan-listing"
         complete_url = f"{base_url}?form={encoded_form}"
-        
+
         return complete_url
-        
+
     except Exception as e:
         logger.error(f"Error building URL: {e}")
         return ""
