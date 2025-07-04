@@ -1,0 +1,50 @@
+variables:
+  - group: mcp-server
+  - name: dockerfilePath
+    value: $(Build.SourcesDirectory)/Dockerfile
+  - name: dockerfilecontainer
+    value: $(containerRegistry)/$(imageRepository)
+  - name: tag
+    value: $(Build.BuildId)
+
+pool:
+  vmImage: ubuntu-latest
+
+stages:
+- stage: Build
+  displayName: Build and Deploy to Dev
+  jobs:
+  - job: BuildAndPush
+    displayName: Build Docker Image and Deploy to Azure
+    steps:
+    - task: AzureCLI@2
+      displayName: Login to ACR
+      inputs:
+        azureSubscription: $(azureServiceConnection)
+        scriptType: bash
+        scriptLocation: inlineScript
+        inlineScript: |
+          az acr login --name $(containerRegistry)
+
+    - task: Docker@2
+      displayName: Build and Push Docker Image
+      inputs:
+        command: buildAndPush
+        repository: $(dockerfilecontainer)
+        dockerfile: $(dockerfilePath)
+        tags: |
+          $(tag)
+          latest
+
+    - script: |
+        echo "DOCKERFILE_PATH     = $(dockerfilePath)"
+        echo "DOCKER_IMAGE        = $(dockerfilecontainer):$(tag)"
+      displayName: Show Docker Variables
+
+    - task: AzureContainerApps@1
+      displayName: Deploy to Azure Container App
+      inputs:
+        azureSubscription: $(azureServiceConnection)
+        containerAppName: $(containerAppName)
+        resourceGroup: $(resourceGroup)
+        imageToDeploy: '$(dockerfilecontainer):$(tag)'
